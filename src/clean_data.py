@@ -1,63 +1,73 @@
-import pandas as pd
-import re
 import os
+import re
+import pandas as pd
 
-# Assure qu'on a un dossier processed/
-os.makedirs("../data/processed", exist_ok=True)
+RAW_TRAIN_PATH = "../data/twitter_training.csv"
+RAW_VAL_PATH   = "../data/twitter_validation.csv"
 
-# Charger les datasets bruts
-train = pd.read_csv("../data/twitter_training.csv", header=None)
-test  = pd.read_csv("../data/twitter_validation.csv", header=None)
+OUT_TRAIN_PATH = "../data/twitter_train_clean.csv"
+OUT_VAL_PATH   = "../data/twitter_val_clean.csv"
 
-# Renommer les colonnes selon le format Kaggle
-train.columns = ["tweet_id", "entity", "sentiment", "tweet_text"]
-test.columns  = ["tweet_id", "entity", "sentiment", "tweet_text"]
-
-print("Train shape :", train.shape)
-print("Test shape  :", test.shape)
-
-# Fusionner les deux datasets
-df = pd.concat([train, test], ignore_index=True)
-
-# Nettoyage du texte
-def clean_text(text):
+# -------------------------
+# 1. Fonction de nettoyage
+# -------------------------
+def clean_text(text: str) -> str:
     if pd.isna(text):
         return ""
     text = text.lower()
     text = re.sub(r"http\S+", " ", text)        # URLs
     text = re.sub(r"@\w+", " ", text)          # mentions
     text = re.sub(r"#\w+", " ", text)          # hashtags
-    text = re.sub(r"[^a-z\s]", " ", text)      # caractères spéciaux/chiffres
+    text = re.sub(r"[^a-z\s]", " ", text)      # tout sauf lettres/espaces
     text = re.sub(r"\s+", " ", text).strip()   # espaces multiples
     return text
 
-df["clean_text"] = df["tweet_text"].apply(clean_text)
+# -------------------------
+# 2. Nettoyage d'un fichier
+# -------------------------
+def process_file(path_in: str, path_out: str, name: str):
+    print(f"\n=== Traitement de {name} ===")
 
-# Supprimer lignes vides
-df = df[df["clean_text"].str.len() > 3]
+    # Les fichiers Kaggle n'ont pas de header → header=None
+    df = pd.read_csv(path_in, header=None)
+    print(f"Shape brut {name} :", df.shape)
 
-# Encodage des sentiments
-label_map = {
-    "Negative": 0,
-    "Neutral": 1,
-    "Positive": 2,
-    "Irrelevant": 3
-}
+    # Colonnes Kaggle : tweet_id, entity, sentiment, tweet_text
+    df.columns = ["tweet_id", "entity", "sentiment", "tweet_text"]
 
-df["label"] = df["sentiment"].map(label_map)
+    # Nettoyage du texte
+    df["clean_text"] = df["tweet_text"].astype(str).apply(clean_text)
 
-# Supprimer les lignes sans label valide
-df = df.dropna(subset=["label"])
-df["label"] = df["label"].astype(int)
+    # Supprimer les lignes trop courtes
+    df = df[df["clean_text"].str.len() > 3]
 
-# Colonnes finales
-df_final = df[["clean_text", "label"]]
+    # Encodage des labels
+    label_map = {
+        "Negative": 0,
+        "Neutral": 1,
+        "Positive": 2,
+        "Irrelevant": 3
+    }
 
-# Sauvegarde
-output_path = "../data/processed/twitter_clean.csv"
-df_final.to_csv(output_path, index=False, encoding="utf-8")
+    df["label"] = df["sentiment"].map(label_map)
+    df = df.dropna(subset=["label"])
+    df["label"] = df["label"].astype(int)
 
-print("\nSUCCESS 🎉")
-print("Fichier généré :", output_path)
-print("Shape finale :", df_final.shape)
-print(df_final.head())
+    # Garder seulement ce qui nous intéresse
+    df_clean = df[["clean_text", "label"]]
+
+    print(f"Shape nettoyé {name} :", df_clean.shape)
+    print("Distribution des labels :")
+    print(df_clean["label"].value_counts())
+
+    # Sauvegarde
+    os.makedirs(os.path.dirname(path_out), exist_ok=True)
+    df_clean.to_csv(path_out, index=False, encoding="utf-8")
+    print(f"✅ Fichier sauvegardé dans {path_out}")
+
+def main():
+    process_file(RAW_TRAIN_PATH, OUT_TRAIN_PATH, "TRAIN")
+    process_file(RAW_VAL_PATH,   OUT_VAL_PATH,   "VALIDATION")
+
+if __name__ == "__main__":
+    main()
