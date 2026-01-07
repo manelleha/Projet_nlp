@@ -72,6 +72,10 @@ def main():
     train = pd.read_csv("../data/twitter_train_clean.csv")
     val   = pd.read_csv("../data/twitter_val_clean.csv")
 
+    # Utilisation de l'intégralité du dataset d'entraînement
+    # if len(train) > 2000:
+    #     train = train.sample(n=2000, random_state=42).reset_index(drop=True)
+
     X_train = train["clean_text"].astype(str).tolist()
     y_train = train["label"].astype(int).values
 

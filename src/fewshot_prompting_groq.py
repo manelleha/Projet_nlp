@@ -99,12 +99,13 @@ def parse_label(raw: str) -> str:
 def llm_predict(client: OpenAI, examples, tweet_text: str) -> tuple[int, str, str]:
     prompt = build_prompt(examples, tweet_text)
 
-    resp = client.responses.create(
+    resp = client.chat.completions.create(
         model=GROQ_MODEL,
-        input=prompt,
-        max_output_tokens=30,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=30,  # 'max_output_tokens' n'est pas standard OpenAI, 'max_tokens' l'est
+        temperature=0.0
     )
-    raw_out = resp.output_text.strip()
+    raw_out = resp.choices[0].message.content.strip()
     label_txt = parse_label(raw_out)
     return INV_LABELS[label_txt], label_txt, raw_out
 
@@ -116,8 +117,8 @@ def main():
     train = pd.read_csv("../data/twitter_train_clean.csv")
     val   = pd.read_csv("../data/twitter_val_clean.csv")
 
-    # échantillon de validation
-    val_eval = val.sample(n=min(N_VAL_EVAL, len(val)), random_state=SEED).reset_index(drop=True)
+    # Utilisation du set de validation complet pour des résultats fiables
+    val_eval = val.reset_index(drop=True)
 
     os.makedirs("../reports", exist_ok=True)
 

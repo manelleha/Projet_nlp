@@ -2,8 +2,8 @@ import os
 import re
 import pandas as pd
 
-RAW_TRAIN_PATH = "../data/twitter_training.csv"
-RAW_VAL_PATH   = "../data/twitter_validation.csv"
+RAW_TRAIN_PATH = "../data/brut/twitter_training.csv"
+RAW_VAL_PATH   = "../data/brut/twitter_validation.csv"
 
 OUT_TRAIN_PATH = "../data/twitter_train_clean.csv"
 OUT_VAL_PATH   = "../data/twitter_val_clean.csv"
