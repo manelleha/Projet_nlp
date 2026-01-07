@@ -87,8 +87,8 @@ apprentissage classique vs prompting sans entraînement.
 
 
 
-## 🚧 À faire
+##  À faire
 - tester tl_finetune.py et fewshot_prompting_groq.py
 - comparer les modeles -> faire une doc
-- Générer learning curves
+
 
