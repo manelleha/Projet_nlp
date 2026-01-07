@@ -72,9 +72,10 @@ def main():
     train = pd.read_csv("../data/twitter_train_clean.csv")
     val   = pd.read_csv("../data/twitter_val_clean.csv")
 
-    # Utilisation de l'intégralité du dataset d'entraînement
-    # if len(train) > 2000:
-    #     train = train.sample(n=2000, random_state=42).reset_index(drop=True)
+    # MODIFICATION UTILISATEUR: 10% du dataset seulement pour comparaison équitable avec Finetuning
+    # (Le finetuning a tourné sur 10% par manque de temps, donc on aligne la baseline)
+    train = train.sample(frac=0.1, random_state=42).reset_index(drop=True)
+    print(f"📉 SUB-SAMPLING ACTIVÉ: Train size réduit à {len(train)} (10%)")
 
     X_train = train["clean_text"].astype(str).tolist()
     y_train = train["label"].astype(int).values
@@ -103,7 +104,7 @@ def main():
     X_val_emb = compute_embeddings(X_val, tokenizer, model, device, desc="Val embeddings")
 
     # 5) Classifieur simple
-    clf = LogisticRegression(max_iter=3000, n_jobs=-1)
+    clf = LogisticRegression(max_iter=3000, n_jobs=1)
     clf.fit(X_train_emb, y_train)
 
     # 6) Évaluation
@@ -126,7 +127,13 @@ def main():
         "f1_macro": [f1],
     }).to_csv("../reports/tl_baseline_frozen.csv", index=False)
 
-    print("\n✅ Résultats sauvegardés dans ../reports/tl_baseline_frozen.csv")
+    # Sauvegarde du modèle (Classifieur) pour la démo
+    import joblib
+    model_dir = "../models/baseline"
+    os.makedirs(model_dir, exist_ok=True)
+    joblib.dump(clf, os.path.join(model_dir, "baseline_model.joblib"))
+    print(f"\n✅ Modèle Baseline sauvegardé dans {model_dir}/baseline_model.joblib")
+    print("✅ Résultats sauvegardés dans ../reports/tl_baseline_frozen.csv")
 
 
 if __name__ == "__main__":

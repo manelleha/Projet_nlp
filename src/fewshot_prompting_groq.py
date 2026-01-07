@@ -117,8 +117,8 @@ def main():
     train = pd.read_csv("../data/twitter_train_clean.csv")
     val   = pd.read_csv("../data/twitter_val_clean.csv")
 
-    # Utilisation du set de validation complet pour des résultats fiables
-    val_eval = val.reset_index(drop=True)
+    # Echantillon de validation pour éviter timeout API (300 est suffisant pour une estimation)
+    val_eval = val.sample(n=min(300, len(val)), random_state=SEED).reset_index(drop=True)
 
     os.makedirs("../reports", exist_ok=True)
 
